@@ -1,55 +1,43 @@
-from flask import Flask, request, jsonify
-import json
+from flask import Flask, jsonify
 import requests
-from datetime import datetime
+import json
+
 
 app = Flask(__name__)
 
 # Fichier où les métriques seront sauvegardées
-METRICS_FILE = 'metrics_data.json'
-AGENT_URL = 'http://172.21.31.251:5001/metrics'
+METRICS_FILE:str= 'metrics_data.json'
 
-def load_metrics():
-    """
-    Charge les métriques sauvegardées depuis un fichier.
-    """
-    try:
-        with open(METRICS_FILE, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
 
+intervalle:int = 10
+
+
+
+# Fonction pour sauvegarder les données dans un fichier
 def save_metrics(metrics):
-    """
-    Sauvegarde les métriques dans un fichier JSON.
-    """
-    with open(METRICS_FILE, 'w') as f:
+
+    with open(METRICS_FILE, 'a') as f:
         json.dump(metrics, f, indent=4)
 
-@app.route('/getmet', methods=['GET'])
-def get_metrics():
-    """
-    Envoie une requête à l'agent pour récupérer les métriques.
-    """
-    try:
-        response = requests.get(AGENT_URL)
+
+@app.route('/getmetrics', methods=['GET'])
+def send_getmetrics():
+    # Envoi des métriques au collecteur via HTTP
+        agent_url = "http://172.21.31.251:5001/getmetrics"
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(agent_url, data=json.dumps('getmetrics'), headers=headers)
+        print(f"Envoi de la demande getmetrics : {response.status_code}")
         if response.status_code == 200:
-            data = response.json()
+            if not response.json() :
+                return jsonify({"error": "No data received"}), 400
+            else:
+                save_metrics(response.json())
+                return print('getmetrics succes 200')
 
-            # Ajoute un horodatage aux métriques
-            timestamp = datetime.now().isoformat()
-            metrics = load_metrics()
-            metrics[timestamp] = data
-            save_metrics(metrics)
-
-            return jsonify({"status": "success", "metrics": data, "timestamp": timestamp}), 200
-        else:
-            return jsonify({"error": f"Échec de la requête à l'agent. Code HTTP : {response.status_code}"}), 500
-    except requests.RequestException as e:
-        return jsonify({"error": f"Erreur lors de la requête à l'agent : {str(e)}"}), 500
+send_getmetrics()
+# Route principale pour afficher un message de bienvenue
 @app.route('/')
 def index():
     return "Collecteur de métriques en ligne!"
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
