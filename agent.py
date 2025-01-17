@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 Ce script expose un serveur Flask qui collecte des métriques système et les rend disponibles via un endpoint `/getmetrics`.
 Les métriques incluent l'utilisation du CPU, de la mémoire, du disque, le nom du système d'exploitation,
@@ -49,7 +50,20 @@ def collect_metrics():
     }
     return metrics
 
-@app.route('/getmetrics', methods=['POST'])
+@app.route('/healthcheck', methods=['GET'])
+def provide_health():
+     """
+    Endpoint Flask pour fournir un healthcheck.
+    Lorsqu'une requête POST est reçue sur `/healthcheck`, les métriques système sont collectées et renvoyées en JSON.
+
+    Returns:
+    - tuple: Un tuple contenant :
+        - Response: La réponse JSON avec les métriques.
+        - int: Le code HTTP 200 (succès).
+    """
+     return jsonify('OK'),200
+
+@app.route('/getmetrics', methods=['GET'])
 def provide_metrics():
     """
     Endpoint Flask pour fournir les métriques collectées.

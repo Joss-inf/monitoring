@@ -1,4 +1,4 @@
-
+#!/usr/bin/python3
 
 """
 Ce script exécute des vérifications de santé et des récupérations de métriques pour une liste d'agents,
